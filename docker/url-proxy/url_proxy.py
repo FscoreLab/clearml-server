@@ -90,9 +90,10 @@ async def proxy_request(request: Request, path: str):
 
     try:
         # Forward the request
+        # Use httpx with pre-encoded URL to avoid double encoding
         response = await client.request(
             method=request.method,
-            url=target_url,
+            url=httpx.URL(target_url, encoded=True),  # Tell httpx URL is already encoded
             headers=dict(request.headers),
             content=await request.body(),
             follow_redirects=False,  # Don't follow redirects, let client handle them
