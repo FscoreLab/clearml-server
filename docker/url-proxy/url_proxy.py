@@ -81,7 +81,11 @@ async def proxy_request(request: Request, path: str):
     if request.url.query:
         target_url += f"?{request.url.query}"
 
-    logger.info(f"{request.method} {original_path} -> {target_url}")
+    # Skip logging for health checks and other noise
+    skip_logging = any(endpoint in target_url.lower() for endpoint in ["health", "favicon.ico"])
+
+    if not skip_logging:
+        logger.info(f"{request.method} {original_path} -> {target_url}")
 
     try:
         # Forward the request using requests (sync) to avoid httpx URL encoding issues
@@ -135,4 +139,4 @@ if __name__ == "__main__":
     logger.info(f"Starting ClearML URL Proxy on port {PROXY_PORT}")
     logger.info(f"Forwarding to {FILESERVER_HOST}:{FILESERVER_PORT}")
 
-    uvicorn.run(app, host="0.0.0.0", port=PROXY_PORT, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=PROXY_PORT, log_level="warning")
