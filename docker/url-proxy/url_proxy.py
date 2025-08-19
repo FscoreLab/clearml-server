@@ -9,22 +9,17 @@ This proxy transparently fixes URLs and forwards requests to the real file serve
 """
 
 import logging
+import os
 import re
-import urllib.parse
-from typing import Optional
 
 import httpx
 import requests
 import uvicorn
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import StreamingResponse
 
-# Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# Configuration
-import os
 
 FILESERVER_HOST = os.getenv("FILESERVER_HOST", "fileserver")  # Docker service name or IP
 FILESERVER_PORT = int(os.getenv("FILESERVER_PORT", "8081"))  # Internal fileserver port
@@ -34,7 +29,6 @@ app = FastAPI(
     title="ClearML URL Proxy", description="Fixes URL encoding issues for ClearML file server", version="1.0.0"
 )
 
-# HTTP client for forwarding requests
 client = httpx.AsyncClient(timeout=30.0)
 
 
