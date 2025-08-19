@@ -14,6 +14,7 @@ import urllib.parse
 from typing import Optional
 
 import httpx
+import requests
 import uvicorn
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import StreamingResponse
@@ -89,14 +90,25 @@ async def proxy_request(request: Request, path: str):
     logger.info(f"{request.method} {original_path} -> {target_url}")
 
     try:
-        # Forward the request
-        response = await client.request(
-            method=request.method,
-            url=target_url,  # httpx handles encoding correctly
-            headers=dict(request.headers),
-            content=await request.body(),
-            follow_redirects=False,  # Don't follow redirects, let client handle them
-        )
+        # Forward the request using requests (sync) to avoid httpx URL encoding issues
+        import asyncio
+
+        # Get body first
+        body = await request.body()
+
+        def sync_request():
+            return requests.request(
+                method=request.method,
+                url=target_url,  # requests preserves URL encoding better
+                headers=dict(request.headers),
+                data=body,
+                allow_redirects=False,
+                timeout=30,
+            )
+
+        # Run sync request in thread pool
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(None, sync_request)
 
         # Forward the response
         headers = dict(response.headers)
