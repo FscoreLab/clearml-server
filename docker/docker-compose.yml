@@ -81,8 +81,31 @@ services:
     - /opt/clearml/logs:/var/log/clearml
     - /opt/clearml/data/fileserver:/mnt/fileserver
     - /opt/clearml/config:/opt/clearml/config
+    # Убрали внешний порт - теперь доступен только через прокси
+    expose:
+    - "8081"
+
+  # URL прокси для исправления encoding проблем
+  url-proxy:
+    build: ./url-proxy
+    container_name: clearml-url-proxy
     ports:
-    - "8081:8081"
+      - "8081:8082"  # Внешний nginx проксирует на этот порт
+    environment:
+      - FILESERVER_HOST=clearml-fileserver
+      - FILESERVER_PORT=8081
+    networks:
+      - backend
+      - frontend
+    restart: unless-stopped
+    depends_on:
+      - fileserver
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   mongo:
     networks:
